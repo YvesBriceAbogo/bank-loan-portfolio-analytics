@@ -1,0 +1,12 @@
+# Power BI Desktop local settings
+**/.pbi/
+*.abf
+*.tmp
+
+# Raw data (do not commit CSV files)
+data/raw/*
+!data/raw/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
