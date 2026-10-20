@@ -1,26 +1,57 @@
--- =========================================================================
--- Script: 03_loan_status_summary.sql
--- Purpose: Aggregates metrics by loan status (Overall and MTD)
--- =========================================================================
+/*
+Purpose
+-------
+Validate the loan-status table in the Summary page.
 
-DECLARE @CurrentMonth INT = 12; -- Adjust as needed
+MTD is anchored to the latest issue_date in the source data.
+Amounts received are grouped by issue_date; this is not a
+payment-transaction-date cash-flow analysis.
+*/
 
--- 1. Overall Summary by Status
+DECLARE @AsOfDate date =
+(
+    SELECT CAST(MAX(issue_date) AS date)
+    FROM dbo.bank_loan_c_data
+);
+
+IF @AsOfDate IS NULL
+    THROW 50001, 'No non-null issue_date is available.', 1;
+
+DECLARE @MTDStart date =
+    DATEFROMPARTS(YEAR(@AsOfDate), MONTH(@AsOfDate), 1);
+
+DECLARE @MTDEndExclusive date =
+    DATEADD(day, 1, @AsOfDate);
+
 SELECT
     loan_status,
-    COUNT(id) AS LoanCount,
-    SUM(total_payment) AS Total_Amount_Received,
-    SUM(loan_amount) AS Total_Funded_Amount,
-    AVG(int_rate) * 100 AS Interest_Rate,
-    AVG(dti) * 100 AS DTI
-FROM dbo.bank_loan_c_data
-GROUP BY loan_status;
+    COUNT(id) AS loan_applications,
+    SUM(loan_amount) AS total_funded_amount,
+    SUM(total_payment) AS total_amount_received,
 
--- 2. MTD Summary by Status
-SELECT 
-    loan_status, 
-    SUM(total_payment) AS MTD_Total_Amount_Received, 
-    SUM(loan_amount) AS MTD_Total_Funded_Amount 
+    COUNT(CASE
+        WHEN issue_date >= @MTDStart
+         AND issue_date < @MTDEndExclusive
+        THEN id
+    END) AS mtd_loan_applications,
+
+    SUM(CASE
+        WHEN issue_date >= @MTDStart
+         AND issue_date < @MTDEndExclusive
+        THEN loan_amount
+    END) AS mtd_funded_amount,
+
+    SUM(CASE
+        WHEN issue_date >= @MTDStart
+         AND issue_date < @MTDEndExclusive
+        THEN total_payment
+    END) AS mtd_amount_received,
+
+    100.0 * AVG(CAST(int_rate AS decimal(19, 8)))
+        AS average_interest_rate_pct,
+
+    100.0 * AVG(CAST(dti AS decimal(19, 8)))
+        AS average_dti_pct
 FROM dbo.bank_loan_c_data
-WHERE MONTH(issue_date) = @CurrentMonth
-GROUP BY loan_status;
+GROUP BY loan_status
+ORDER BY loan_status;
