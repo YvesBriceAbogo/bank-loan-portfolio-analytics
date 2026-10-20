@@ -2,7 +2,9 @@
 
 A three-page Power BI report for exploring loan applications, funding, amounts received, interest rates, debt-to-income ratios, and loan-status performance. The project combines SQL Server validation, Power Query data preparation, DAX measures, and deployment to Power BI Service through a standard on-premises data gateway.
 
-**Author:** [Brice Abogo](https://www.linkedin.com/in/brice-abogo/)
+**Author:** Brice Abogo  (https://www.linkedin.com/in/brice-abogo/)
+**Specialization:** Financial Analysis | Accounting | Business Intelligence  
+**Technologies:** SQL Server | Power Query | DAX | Power BI | Power BI Service
 
 ---
 
