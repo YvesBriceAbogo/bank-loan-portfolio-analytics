@@ -1,20 +1,61 @@
 let
-    // Generate a continuous date range based on the fact table
-    Source = Sql.Database("Localhost", "Bank Loan DB"),
-    FactTable = Source{[Schema="dbo", Item="bank_loan_c_data"]}[Data],
-    
-    // Get Min and Max dates
-    MinDate = List.Min(FactTable[issue_date]),
-    MaxDate = List.Max(FactTable[issue_date]),
-    
-    // Generate continuous list of dates
-    DateList = List.Dates(MinDate, Duration.Days(MaxDate - MinDate) + 1, #duration(1, 0, 0, 0)),
-    DateTable = Table.FromList(DateList, Splitter.SplitByNothing(), {"Date"}, null, ExtraValues.Error),
-    
-    // Add columns
-    #"Changed Type" = Table.TransformColumnTypes(DateTable, {{"Date", type date}}),
-    #"Added Month Name" = Table.AddColumn(#"Changed Type", "Month Name", each Date.MonthName([Date]), type text),
-    #"Added Year" = Table.AddColumn(#"Added Month Name", "Year", each Date.Year([Date]), Int64.Type),
-    #"Added Month Number" = Table.AddColumn(#"Added Year", "Month Number", each Date.Month([Date]), Int64.Type)
+    // Reuse the existing fact query instead of opening a second,
+    // independently configured SQL Server connection.
+    Fact = bank_loan_c_data,
+
+    IssueDates = List.RemoveNulls(Fact[issue_date]),
+
+    FirstDate =
+        if List.IsEmpty(IssueDates) then
+            error "No non-null issue_date values are available."
+        else
+            Date.From(List.Min(IssueDates)),
+
+    LastDate = Date.From(List.Max(IssueDates)),
+
+    DayCount = Duration.Days(LastDate - FirstDate) + 1,
+
+    ContinuousDates =
+        List.Dates(
+            FirstDate,
+            DayCount,
+            #duration(1, 0, 0, 0)
+        ),
+
+    Calendar =
+        Table.FromColumns(
+            {ContinuousDates},
+            {"Date"}
+        ),
+
+    TypedCalendar =
+        Table.TransformColumnTypes(
+            Calendar,
+            {{"Date", type date}}
+        ),
+
+    WithYear =
+        Table.AddColumn(
+            TypedCalendar,
+            "Year",
+            each Date.Year([Date]),
+            Int64.Type
+        ),
+
+    WithMonthNumber =
+        Table.AddColumn(
+            WithYear,
+            "Month Number",
+            each Date.Month([Date]),
+            Int64.Type
+        ),
+
+    WithYearMonth =
+        Table.AddColumn(
+            WithMonthNumber,
+            "Year-Month",
+            each Date.ToText([Date], "yyyy-MM", "en-US"),
+            type text
+        )
 in
-    #"Added Month Number"
+    WithYearMonth
