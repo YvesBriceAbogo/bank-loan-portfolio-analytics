@@ -1,0 +1,299 @@
+// Bank Loan Report — reference measure definitions
+//
+// Prerequisites:
+// - 'Date Table'[Date] contains one row per calendar day.
+// - Mark 'Date Table' as the model's date table.
+// - An active relationship connects 'Date Table'[Date]
+//   to bank_loan_c_data[issue_date].
+// - Good Loan Vs Bad Loan is the existing Power BI group
+//   based on loan_status.
+//
+// This file does not automatically update the PBIX.
+
+// ============================================================
+// Core KPIs
+// ============================================================
+
+Total Loan Applications =
+COUNT ( bank_loan_c_data[id] )
+
+Total Funded Amount =
+SUM ( bank_loan_c_data[loan_amount] )
+
+Total Amount Received =
+SUM ( bank_loan_c_data[total_payment] )
+
+Average Int Rate =
+AVERAGE ( bank_loan_c_data[int_rate] )
+
+Avg DTI =
+AVERAGE ( bank_loan_c_data[dti] )
+
+
+// ============================================================
+// Month-to-date (MTD)
+// TOTALMTD evaluates the underlying measure over the date range;
+// it does not sum daily averages for interest rate or DTI.
+// ============================================================
+
+MTD Loan Applications =
+TOTALMTD (
+    [Total Loan Applications],
+    'Date Table'[Date]
+)
+
+MTD Funded Amount =
+TOTALMTD (
+    [Total Funded Amount],
+    'Date Table'[Date]
+)
+
+MTD Amount Received =
+TOTALMTD (
+    [Total Amount Received],
+    'Date Table'[Date]
+)
+
+MTD Avg Int Rate =
+TOTALMTD (
+    [Average Int Rate],
+    'Date Table'[Date]
+)
+
+MTD Avg DTI =
+TOTALMTD (
+    [Avg DTI],
+    'Date Table'[Date]
+)
+
+
+// ============================================================
+// Previous month-to-date (PMTD)
+// Compare with the same elapsed day of the previous month.
+// EDATE caps dates at the previous month's final day.
+// ALL removes current calendar selections while retaining
+// non-calendar filters such as state and grade.
+// ============================================================
+
+PMTD Loan Applications =
+VAR AsOfDate = MAX ( 'Date Table'[Date] )
+VAR PreviousMonthStart = EOMONTH ( AsOfDate, -2 ) + 1
+VAR PreviousMonthEnd = EDATE ( AsOfDate, -1 )
+RETURN
+    IF (
+        ISBLANK ( AsOfDate ),
+        BLANK (),
+        CALCULATE (
+            [Total Loan Applications],
+            FILTER (
+                ALL ( 'Date Table' ),
+                'Date Table'[Date] >= PreviousMonthStart
+                    && 'Date Table'[Date] <= PreviousMonthEnd
+            )
+        )
+    )
+
+PMTD Total Funded Amount =
+VAR AsOfDate = MAX ( 'Date Table'[Date] )
+VAR PreviousMonthStart = EOMONTH ( AsOfDate, -2 ) + 1
+VAR PreviousMonthEnd = EDATE ( AsOfDate, -1 )
+RETURN
+    IF (
+        ISBLANK ( AsOfDate ),
+        BLANK (),
+        CALCULATE (
+            [Total Funded Amount],
+            FILTER (
+                ALL ( 'Date Table' ),
+                'Date Table'[Date] >= PreviousMonthStart
+                    && 'Date Table'[Date] <= PreviousMonthEnd
+            )
+        )
+    )
+
+PMTD Amount Received =
+VAR AsOfDate = MAX ( 'Date Table'[Date] )
+VAR PreviousMonthStart = EOMONTH ( AsOfDate, -2 ) + 1
+VAR PreviousMonthEnd = EDATE ( AsOfDate, -1 )
+RETURN
+    IF (
+        ISBLANK ( AsOfDate ),
+        BLANK (),
+        CALCULATE (
+            [Total Amount Received],
+            FILTER (
+                ALL ( 'Date Table' ),
+                'Date Table'[Date] >= PreviousMonthStart
+                    && 'Date Table'[Date] <= PreviousMonthEnd
+            )
+        )
+    )
+
+PMTD Avg Int Rate =
+VAR AsOfDate = MAX ( 'Date Table'[Date] )
+VAR PreviousMonthStart = EOMONTH ( AsOfDate, -2 ) + 1
+VAR PreviousMonthEnd = EDATE ( AsOfDate, -1 )
+RETURN
+    IF (
+        ISBLANK ( AsOfDate ),
+        BLANK (),
+        CALCULATE (
+            [Average Int Rate],
+            FILTER (
+                ALL ( 'Date Table' ),
+                'Date Table'[Date] >= PreviousMonthStart
+                    && 'Date Table'[Date] <= PreviousMonthEnd
+            )
+        )
+    )
+
+PMTD Avg DTI =
+VAR AsOfDate = MAX ( 'Date Table'[Date] )
+VAR PreviousMonthStart = EOMONTH ( AsOfDate, -2 ) + 1
+VAR PreviousMonthEnd = EDATE ( AsOfDate, -1 )
+RETURN
+    IF (
+        ISBLANK ( AsOfDate ),
+        BLANK (),
+        CALCULATE (
+            [Avg DTI],
+            FILTER (
+                ALL ( 'Date Table' ),
+                'Date Table'[Date] >= PreviousMonthStart
+                    && 'Date Table'[Date] <= PreviousMonthEnd
+            )
+        )
+    )
+
+
+// ============================================================
+// Month-over-month (MoM) relative changes
+// Format these results as percentages in Power BI.
+// ============================================================
+
+MoM Loan Applications =
+DIVIDE (
+    [MTD Loan Applications] - [PMTD Loan Applications],
+    [PMTD Loan Applications]
+)
+
+MoM Total Funded Amount =
+DIVIDE (
+    [MTD Funded Amount] - [PMTD Total Funded Amount],
+    [PMTD Total Funded Amount]
+)
+
+MoM Total Amount Received =
+DIVIDE (
+    [MTD Amount Received] - [PMTD Amount Received],
+    [PMTD Amount Received]
+)
+
+MoM Avg Int Rate =
+DIVIDE (
+    [MTD Avg Int Rate] - [PMTD Avg Int Rate],
+    [PMTD Avg Int Rate]
+)
+
+MoM Avg DTI =
+DIVIDE (
+    [MTD Avg DTI] - [PMTD Avg DTI],
+    [PMTD Avg DTI]
+)
+
+
+// ============================================================
+// Good loans: Fully Paid or Current
+// KEEPFILTERS respects existing report selections.
+// ============================================================
+
+Good Loan Applications =
+CALCULATE (
+    [Total Loan Applications],
+    KEEPFILTERS (
+        bank_loan_c_data[Good Loan Vs Bad Loan] = "Good Loan"
+    )
+)
+
+Good Loan Funded Amount =
+CALCULATE (
+    [Total Funded Amount],
+    KEEPFILTERS (
+        bank_loan_c_data[Good Loan Vs Bad Loan] = "Good Loan"
+    )
+)
+
+Good Loan Received Amount =
+CALCULATE (
+    [Total Amount Received],
+    KEEPFILTERS (
+        bank_loan_c_data[Good Loan Vs Bad Loan] = "Good Loan"
+    )
+)
+
+Good Loan % =
+DIVIDE (
+    [Good Loan Applications],
+    [Total Loan Applications]
+)
+
+
+// ============================================================
+// Bad loans: Charged Off
+// ============================================================
+
+Bad Loan Applications =
+CALCULATE (
+    [Total Loan Applications],
+    KEEPFILTERS (
+        bank_loan_c_data[Good Loan Vs Bad Loan] = "Bad Loan"
+    )
+)
+
+Bad Loan Funded Amount =
+CALCULATE (
+    [Total Funded Amount],
+    KEEPFILTERS (
+        bank_loan_c_data[Good Loan Vs Bad Loan] = "Bad Loan"
+    )
+)
+
+Bad Loan Received Amount =
+CALCULATE (
+    [Total Amount Received],
+    KEEPFILTERS (
+        bank_loan_c_data[Good Loan Vs Bad Loan] = "Bad Loan"
+    )
+)
+
+Bad Loan % =
+DIVIDE (
+    [Bad Loan Applications],
+    [Total Loan Applications]
+)
+
+
+// ============================================================
+// Dynamic visual title
+// The screenshot shows a field-parameter table named
+// 'Selected Measure'. If the PBIX still uses the misspelled
+// name 'Seledcted Measure', rename it in Desktop before applying
+// this reference definition.
+// ============================================================
+
+Employee title =
+VAR SelectedOrder =
+    SELECTEDVALUE (
+        'Selected Measure'[Selected Measure Order],
+        0
+    )
+VAR SelectedLabel =
+    SWITCH (
+        SelectedOrder,
+        0, "Total Amount Received",
+        1, "Total Funded Amount",
+        2, "Total Loan Applications",
+        "Selected Measure"
+    )
+RETURN
+    SelectedLabel & " by Employee Length"
