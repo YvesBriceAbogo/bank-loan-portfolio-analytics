@@ -2,22 +2,31 @@
 
 A three-page Power BI report for exploring loan applications, funding, amounts received, interest rates, debt-to-income ratios, and loan-status performance. The project combines SQL Server validation, Power Query data preparation, DAX measures, and deployment to Power BI Service through a standard on-premises data gateway.
 
-**Author:** Brice Abogo(https://www.linkedin.com/in/brice-abogo/)
+**Author:** [Brice Abogo](https://www.linkedin.com/in/brice-abogo/)  
 **Specialization:** Financial Analysis | Accounting | Business Intelligence  
 **Technologies:** SQL Server | Power Query | DAX | Power BI | Power BI Service
+
+---
+
+## Explore the Project
+
+- [**View the Complete Power BI Dashboard (PDF)**](reports/bank-loan-report.pdf)
+- [**Explore Dashboard Screenshots**](docs/images/)
+- [**View the Power BI Data Model**](docs/images/04_data_model.png)
+- [**Read the Technical Documentation**](docs/)
 
 ---
 
 ## Dashboard Preview
 
 ### 1. Summary Page
-![Bank Loan Report - Summary Page](docs/images/01_summary.jpg)
+[![Bank Loan Report - Summary Page](docs/images/01_summary.png)](docs/images/01_summary.png)
 
 ### 2. Overview Page
-![Bank Loan Report - Overview Page](docs/images/02_overview.jpg)
+[![Bank Loan Report - Overview Page](docs/images/02_overview.png)](docs/images/02_overview.png)
 
 ### 3. Details Page
-![Bank Loan Report - Details Page](docs/images/03_details.jpg)
+[![Bank Loan Report - Details Page](docs/images/03_details.png)](docs/images/03_details.png)
 
 ---
 
@@ -63,7 +72,7 @@ Amounts received are analyzed against **loan issue dates** in this model. Conseq
 
 ## Data Flow & Semantic Model
 
-![Semantic Model View](docs/images/04_data_model.jpg)
+[![Semantic Model View](docs/images/04_data_model.png)](docs/images/04_data_model.png)
 
 1. A CSV dataset is loaded into SQL Server as `dbo.bank_loan_c_data`.
 2. Power Query loads the loan table and builds a date dimension.
@@ -81,6 +90,7 @@ Amounts received are analyzed against **loan issue dates** in this model. Conseq
 | [`power-query/`](power-query/) | Improved Power Query (M) reference implementations |
 | [`dax/`](dax/) | DAX measure definitions and field-parameter documentation |
 | [`docs/`](docs/) | Data dictionary, semantic model architecture, and gateway deployment guide |
+| [`reports/`](reports/) | Complete Power BI dashboard exported in PDF format |
 | [`data/`](data/) | Data-source notes; no raw dataset is distributed |
 
 ## Reproduction Prerequisites
